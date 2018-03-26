@@ -122,11 +122,13 @@ Dictionary<KeyType, Value>::Dictionary(const KeyType & key) {
         tempIndex = 0;
 }
 
+// Uses Recursion to go through all the nodes and delete them
 template <class KeyType, class Value>
-Dictionary<KeyType, Value>::~Dictionary() { // use recursion to get through all nodes and delete them
+Dictionary<KeyType, Value>::~Dictionary() {
         Clear();
 }
 
+// Recursively traverses tree in order and populates a temporary array for Balance Function //
 template<class KeyType, class Value>
 void Dictionary<KeyType, Value>::Trav_InOrder(Node<KeyType, Value> * items, Node<KeyType, Value> *& curr) {
         if (curr == nullptr)
@@ -137,12 +139,10 @@ void Dictionary<KeyType, Value>::Trav_InOrder(Node<KeyType, Value> * items, Node
         Trav_InOrder(items, curr->RefRight());
 }
 
-
-// MUST USE REFERENCE TO PTRS HERE TOO IN ORDER TO CHANGE THE ROOT PTR
-// THATS WHY WE USE RefLeft() and RefRight to attach items
+// Balance _util function that is called in Balance () //
 template <class KeyType, class Value>
 Node<KeyType, Value> * Dictionary<KeyType, Value>::utilBalance(Node<KeyType, Value> * const items, Node<KeyType, Value> * const parent, int small, int large) {
-        if (small > large ) // dict is empty or we hit a stop condition
+        if (small > large) // dict is empty or we hit a stop condition
                 return nullptr;
         
         Node<KeyType, Value> * newNode = new Node<KeyType, Value>(items[(small+large)/2]);
@@ -152,32 +152,31 @@ Node<KeyType, Value> * Dictionary<KeyType, Value>::utilBalance(Node<KeyType, Val
         return newNode;
 }
 
+// Clears the old tree and repopulates a more balanced tree //
 template<class KeyType, class Value>
 void Dictionary<KeyType, Value>::Balance() {
         // position of the temporary array storage held in tempIndex class member
 	Size(); // update size
-        tempIndex = 0;// reset temp index
-	Node<KeyType, Value> * items = new Node<KeyType, Value>[size];
+        tempIndex = 0;
+	Node<KeyType, Value> * items = new Node<KeyType, Value>[size]; // create temp storage
 	Trav_InOrder(items, root);
 	Clear();
-        root = utilBalance(items, nullptr, 0, size-1);
-
-	//delete [] items; //<- this line causes crash? is memory already deallocated?
+        root = utilBalance(items, nullptr, 0, size-1); // begin recursion
 	items = nullptr;
 }
 
+// Clears Tree Recursively //
 template<class KeyType, class Value>
 void Dictionary<KeyType, Value>::Clear() {
 	_Clear(root); // need to pass a reference to the root to keep changes
 }
 
-// MUST PASS IN A REFERENCE TO A POINTER SO CHANGES TO TREE ARE SAVED
+// _util method for Clear () //
 template<class KeyType, class Value>
 void Dictionary<KeyType, Value>::_Clear(Node<KeyType, Value> *& root) {
 	// when a leaf node is reached (evenutally all will be leaf nodes)
-	if (root == nullptr) {
+	if (root == nullptr)
 		return;	
-	}
 	_Clear(root->RefLeft());
 	_Clear(root->RefRight());
 	delete root;
@@ -189,6 +188,7 @@ Node<KeyType, Value>*& Dictionary<KeyType, Value>::RefRoot() {
 	return root;
 }
 
+// Checks if tree is empty //
 template <class KeyType, class Value>
 bool Dictionary<KeyType, Value>::IsEmpty() const {
 	if (root == nullptr)
@@ -197,11 +197,11 @@ bool Dictionary<KeyType, Value>::IsEmpty() const {
 		return false;
 }
 
+// Searches for a key and removes it if in the tree // 
 template <class KeyType, class Value>
 void Dictionary<KeyType, Value>::Remove(const KeyType & key) {
-	if (root == nullptr) {
+	if (root == nullptr)
 		return;
-	}
 
 	Node<KeyType, Value> * pos = root;
 	Node<KeyType, Value> * prev = root;
@@ -224,18 +224,14 @@ void Dictionary<KeyType, Value>::Remove(const KeyType & key) {
                 } else // key == pos->GetKey();
                         break;
         }
-	
 	utilRemover(prev, pos);
-
 }
 
-
+// _util method used to remove an element //
 template<class KeyType, class Value>
 void Dictionary<KeyType, Value>::utilRemover (Node<KeyType, Value> *& prev, Node<KeyType, Value> *& pos) {
-        //cout << "Looking to delete: " << pos->GetKey() << "Prev? "<< prev->GetKey() << endl;
 	// Leaf Node Case
 	if (pos->GetLeft() == nullptr && pos->GetRight() == nullptr) {
-		//cout << "Leaf Node Case" << endl;
 		if (pos->GetKey() < prev->GetKey())
 			prev->SetLeft(nullptr);
 		else
@@ -246,7 +242,6 @@ void Dictionary<KeyType, Value>::utilRemover (Node<KeyType, Value> *& prev, Node
         }
 	// Single child case 
 	else if (pos->GetLeft() == nullptr && pos->GetRight() != nullptr) {
-        	//cout << "Single Child Case" << endl;
 		if (pos == root) {
 			root = pos->GetRight();
 			root->SetParent(nullptr);	
@@ -272,9 +267,7 @@ void Dictionary<KeyType, Value>::utilRemover (Node<KeyType, Value> *& prev, Node
 			pos->GetLeft()->SetParent(prev);
 		}
 		delete pos;
-        }
-	// Two children case
-	  else {
+        } else { // Two Children case
 		// find the minimum node of the left subtree
 		Node<KeyType, Value> * copy = utilMinimumNode(pos->GetRight());
 		
@@ -308,15 +301,16 @@ void Dictionary<KeyType, Value>::utilRemover (Node<KeyType, Value> *& prev, Node
 	}
 }
 
+// _util method that finds the minimum node recursively // 
 template <class KeyType, class Value>
 Node<KeyType, Value> * Dictionary<KeyType, Value>::utilMinimumNode(Node<KeyType, Value> * tree) const {
-	if (tree->GetLeft() == nullptr) {
+	if (tree->GetLeft() == nullptr)
 		return tree;
-	}
         utilMinimumNode(tree->GetLeft());
 
 }
 
+// _util method that is called in Size() //
 template <class KeyType, class Value>
 int Dictionary<KeyType, Value>::utilSize(Node<KeyType, Value> * ptr) const {
 	if (ptr == nullptr)
@@ -324,12 +318,14 @@ int Dictionary<KeyType, Value>::utilSize(Node<KeyType, Value> * ptr) const {
 	return 1 + utilSize (ptr->GetLeft()) + utilSize(ptr->GetRight()); // 1+ is important here
 }
 
+// Calculates the size of the tree recursively //
 template<class KeyType, class Value>
 int Dictionary<KeyType, Value>::Size() {
 	size = utilSize(root);
 	return size;
 }
 
+// _util Method that is called in Height() //
 template <class KeyType, class Value>
 int Dictionary<KeyType, Value>::utilHeight(Node<KeyType, Value> * ptr) const {
 	if (ptr == nullptr)
@@ -337,12 +333,14 @@ int Dictionary<KeyType, Value>::utilHeight(Node<KeyType, Value> * ptr) const {
 	return 1+std::max(utilHeight(ptr->GetLeft()), utilHeight(ptr->GetRight()));
 }
 
+// Calculates Height of the tree recursively //
 template<class KeyType, class Value>
 int Dictionary<KeyType, Value>::Height() {
 	height = utilHeight(root);	
 	return height;
 }
 
+// _util method that is called in Count //
 template <class KeyType, class Value>
 int Dictionary<KeyType, Value>::utilSearch (const KeyType & searchKey, Node<KeyType, Value> * ptr) const {
 	if (ptr == nullptr)
@@ -356,12 +354,13 @@ int Dictionary<KeyType, Value>::utilSearch (const KeyType & searchKey, Node<KeyT
 		return 1;	
 }
 
+// If Key is in tree returns 1 else 0 //
 template <class KeyType, class Value>
 int Dictionary<KeyType, Value>::Count (const KeyType & searchKey) const {
 	return utilSearch(searchKey, root);
 }
 
-// Seems to work now, but test further
+// returns value stored at key if exists, otherwise creates the key and places in tree //
 template <class KeyType, class Value>
 Value& Dictionary<KeyType, Value>::operator[] (const KeyType & newKey) {
 	if (root == nullptr) {
@@ -402,6 +401,7 @@ Value& Dictionary<KeyType, Value>::operator[] (const KeyType & newKey) {
 	
 }
 
+// _util print method that gets called in Print () //
 template <class KeyType, class Value>
 void Dictionary<KeyType, Value>::utilPrint(Node<KeyType, Value> * ptr) const {
 	if (ptr == nullptr)
@@ -411,6 +411,7 @@ void Dictionary<KeyType, Value>::utilPrint(Node<KeyType, Value> * ptr) const {
 	utilPrint(ptr->GetRight());
 }
 
+// Prints the tree in order //
 template <class KeyType, class Value>
 void Dictionary<KeyType, Value>::Print() const {
 	utilPrint(root);
